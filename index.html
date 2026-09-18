@@ -103,6 +103,32 @@
                 <div id="resultTitle" class="result-title">¡GOOOOOL!</div>
                 <div id="resultDetail" class="result-detail">Llegada: t = 1.15s | Altura: 2.10m</div>
             </div>
+
+            <!-- PANEL DE GRÁFICAS (oculto inicialmente) -->
+            <div id="graphsPanel" class="graphs-panel">
+                <div class="graphs-header">
+                    <span>📊 Análisis Cinemático del Tiro</span>
+                    <button id="closeGraphsBtn" class="close-graphs-btn" title="Cerrar gráficas">✕</button>
+                </div>
+                <div class="graphs-grid">
+                    <div class="graph-card">
+                        <div class="graph-title">Posición X vs Tiempo</div>
+                        <canvas id="graphX"></canvas>
+                    </div>
+                    <div class="graph-card">
+                        <div class="graph-title">Posición Y vs Tiempo</div>
+                        <canvas id="graphY"></canvas>
+                    </div>
+                    <div class="graph-card">
+                        <div class="graph-title">Velocidad VX vs Tiempo</div>
+                        <canvas id="graphVx"></canvas>
+                    </div>
+                    <div class="graph-card">
+                        <div class="graph-title">Velocidad VY vs Tiempo</div>
+                        <canvas id="graphVy"></canvas>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <!-- PANEL DERECHO: PIZARRA DE FÓRMULAS, PROBLEMA Y CONTROLES -->
@@ -298,7 +324,7 @@
         </aside>
     </main>
 
-    <!-- SCRIPTS (Orden de carga: Three.js -> Física -> Sonido -> Desafíos -> Escena 3D -> Controlador) -->
+    <!-- SCRIPTS (Orden de carga: Three.js -> Física -> Sonido -> Desafíos -> Escena 3D -> Gráficas -> Controlador) -->
     <script src="js/vendor/three.min.js"></script>
     <!-- Fallback si Three.js local no carga -->
     <script>
@@ -310,6 +336,7 @@
     <script src="js/audio.js"></script>
     <script src="js/challenges.js"></script>
     <script src="js/scene3d.js"></script>
+    <script src="js/graphs.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>
