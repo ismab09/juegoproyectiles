@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tiro Libre Cinemático - Física de Proyectiles en 3D</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22><text y=%2222%22 font-size=%2222%22>⚽</text></svg>">
+</head>
+<body>
+
+    <!-- BARRA SUPERIOR -->
+    <header>
+        <div class="brand">
+            <span class="brand-icon">⚽</span>
+            <span>Tiro Libre Cinemático</span>
+        </div>
+
+        <!-- SELECTOR DE LOS 4 APARTADOS -->
+        <nav class="mode-switcher">
+            <button class="mode-tab active" data-mode="top_corner" title="Tiro oblicuo al ángulo superior">
+                <span>🎯</span> Al Ángulo
+            </button>
+            <button class="mode-tab" data-mode="low_shot" title="Tiro rasante pegado al suelo">
+                <span>⚡</span> Por Abajo
+            </button>
+            <button class="mode-tab" data-mode="wall_over" title="Superar la barrera con arco parabólico">
+                <span>🛡️</span> Barrera por Arriba
+            </button>
+            <button class="mode-tab" data-mode="wall_under" title="Pasar por debajo cuando la barrera salta">
+                <span>🪄</span> Barrera por Abajo
+            </button>
+        </nav>
+
+        <div class="header-actions">
+            <button id="soundToggle" class="icon-btn" title="Activar/Silenciar efectos">
+                🔊 Sonido: ON
+            </button>
+        </div>
+    </header>
+
+    <!-- CUERPO PRINCIPAL DE LA APLICACIÓN -->
+    <main class="main-wrapper">
+
+        <!-- PANEL IZQUIERDO: VISUALIZADOR 3D EN PRIMERA PERSONA -->
+        <section class="viewport-panel">
+            <div id="sceneContainer"></div>
+
+            <!-- OVERLAY SUPERIOR: TELEMETRÍA Y DISTANCIA -->
+            <div class="viewport-overlay-top">
+                <div class="dist-badge">
+                    <span>📏 Distancia al Arco:</span>
+                    <span id="distValue">22 m</span>
+                </div>
+
+                <div class="telemetry-strip">
+                    <div class="telemetry-item">
+                        <span class="tel-label">Vfx (constante)</span>
+                        <span id="telemetryVfx" class="tel-val">-- m/s</span>
+                    </div>
+                    <div class="telemetry-item">
+                        <span class="tel-label">Tiempo (t)</span>
+                        <span id="telemetryTime" class="tel-val">-- s</span>
+                    </div>
+                    <div class="telemetry-item">
+                        <span class="tel-label">Vfy (llegada)</span>
+                        <span id="telemetryVfy" class="tel-val">-- m/s</span>
+                    </div>
+                    <div class="telemetry-item">
+                        <span class="tel-label">Yf (en arco)</span>
+                        <span id="telemetryYGoal" class="tel-val">-- m</span>
+                    </div>
+                    <div id="wallTelemetryRow" class="telemetry-item" style="display:none;">
+                        <span class="tel-label">Yf (en barrera)</span>
+                        <span id="telemetryYWall" class="tel-val" style="color: var(--accent-gold);">-- m</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- OVERLAY INFERIOR: SELECTOR DE CÁMARA Y HINT DE CÁMARA LIBRE -->
+            <div class="viewport-overlay-bottom">
+                <div class="cam-btns-group">
+                    <button class="cam-btn active" data-cam="player" title="Vista en 1ra persona del futbolista detrás del balón">
+                        👤 Vista Jugador
+                    </button>
+                    <button class="cam-btn" data-cam="follow" title="Cámara dinámica siguiendo el vuelo">
+                        🚀 Seguimiento
+                    </button>
+                    <button class="cam-btn" data-cam="side" title="Gráfico cinemático lateral X-Y (el arco siempre visible)">
+                        📐 Gráfico X-Y
+                    </button>
+                    <button class="cam-btn" data-cam="goal" title="Vista panorámica desde el arco viendo todo el marco reglamentario y la cancha">
+                        🥅 Desde el Arco
+                    </button>
+                </div>
+                <div class="cam-hint" title="Mantén presionado el click derecho del mouse y arrastra para mover la cámara en 3D en cualquier vista">
+                    🖱️ <span><strong>Click Derecho:</strong> Cámara libre 360°</span>
+                </div>
+            </div>
+
+            <!-- BANNER DE RESULTADO / GOL -->
+            <div id="resultBanner" class="result-banner">
+                <div id="resultTitle" class="result-title">¡GOOOOOL!</div>
+                <div id="resultDetail" class="result-detail">Llegada: t = 1.15s | Altura: 2.10m</div>
+            </div>
+        </section>
+
+        <!-- PANEL DERECHO: PIZARRA DE FÓRMULAS, PROBLEMA Y CONTROLES -->
+        <aside class="sidebar-panel">
+
+            <!-- 1. PIZARRA DE LAS 4 FÓRMULAS CINEMÁTICAS -->
+            <div class="formulas-board">
+                <div class="board-header">
+                    <span class="board-title">📐 Pizarra Cinemática</span>
+                    <span class="board-g-badge">g = 10 m/s² (½g = 5)</span>
+                </div>
+                <div class="formula-grid">
+                    <!-- Fórmula 1: Vfx -->
+                    <div class="formula-badge" data-formula="vfx">
+                        <span class="f-num">Fórmula 1</span>
+                        <span class="f-math">Vfx = vi · cos(α)</span>
+                    </div>
+                    <!-- Fórmula 2: Xf -->
+                    <div class="formula-badge" data-formula="xf">
+                        <span class="f-num">Fórmula 2</span>
+                        <span class="f-math">Xf = xi + vi·cos(α)·t</span>
+                    </div>
+                    <!-- Fórmula 3: Vfy -->
+                    <div class="formula-badge" data-formula="vfy">
+                        <span class="f-num">Fórmula 3</span>
+                        <span class="f-math">Vfy = vi·sen(α) - g·t</span>
+                    </div>
+                    <!-- Fórmula 4: Yf -->
+                    <div class="formula-badge" data-formula="yf">
+                        <span class="f-num">Fórmula 4</span>
+                        <span class="f-math">Yf = Yi + vi·sen(α)·t - 5t²</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. DESAFÍO EDUCATIVO DE FÍSICA -->
+            <div class="challenge-card">
+                <div class="ch-header">
+                    <span id="challengeTitle" class="ch-title">🎯 Desafío de Física</span>
+                    <span id="challengeBadge" class="ch-badge">Tiro Oblicuo</span>
+                </div>
+
+                <div id="challengeQuestion" class="ch-question">
+                    Calcula los parámetros para clavar la pelota en el ángulo.
+                </div>
+
+                <div class="ch-solver">
+                    <div class="input-row">
+                        <input type="number" id="answerInput" class="num-input" placeholder="Tu cálculo..." step="0.1">
+                        <span id="answerUnit" class="unit-label">m/s</span>
+                        <button id="checkAnswerBtn" class="btn-primary">Comprobar</button>
+                    </div>
+
+                    <div id="answerFeedback" class="feedback-msg"></div>
+
+                    <div style="display: flex; gap: 8px; margin-top: 4px;">
+                        <button id="toggleStepsBtn" class="btn-secondary" style="flex:1;">
+                            📖 Ver Paso a Paso
+                        </button>
+                        <button id="applyToBallBtn" class="btn-secondary" style="flex:1;" title="Cargar valores recomendados en el botín">
+                            ⚡ Auto-calibrar Botín
+                        </button>
+                    </div>
+
+                    <div id="stepByStepBox" class="step-box"></div>
+                </div>
+            </div>
+
+            <!-- 3. CONTROLES DE TIRO Y DISTANCIA -->
+            <div class="controls-card">
+                <div class="ctrl-header">⚙️ Parámetros del Tiro Libre</div>
+
+                <!-- Slider de Distancia al Arco -->
+                <div class="control-group">
+                    <div class="control-label-row">
+                        <span class="label-title">Distancia al Arco (Xf)</span>
+                        <span id="distLabelVal" class="label-val">22 m</span>
+                    </div>
+                    <input type="range" id="distSlider" class="slider-input" min="16" max="35" step="1" value="22">
+                    <div class="dist-presets">
+                        <button class="dist-pill" data-dist="18">18 m (Área)</button>
+                        <button class="dist-pill" data-dist="22">22 m (Clásico)</button>
+                        <button class="dist-pill" data-dist="26">26 m (Medio)</button>
+                        <button class="dist-pill" data-dist="32">32 m (Bomba)</button>
+                    </div>
+                </div>
+
+                <!-- Velocidad Inicial vi -->
+                <div class="control-group">
+                    <div class="control-label-row">
+                        <span class="label-title">Velocidad Inicial (vi)</span>
+                        <span id="viValue" class="label-val">22.0 m/s (79 km/h)</span>
+                    </div>
+                    <input type="range" id="viSlider" class="slider-input" min="12" max="36" step="0.5" value="22.0">
+                </div>
+
+                <!-- Ángulo de Elevación alpha -->
+                <div class="control-group">
+                    <div class="control-label-row">
+                        <span class="label-title">Ángulo Vertical (α)</span>
+                        <span id="alphaValue" class="label-val">25°</span>
+                    </div>
+                    <input type="range" id="alphaSlider" class="slider-input" min="0" max="42" step="1" value="25">
+                </div>
+
+                <!-- Desvío Lateral (Apuntar a los palos) -->
+                <div class="control-group">
+                    <div class="control-label-row">
+                        <span class="label-title">Dirección Lateral (Z)</span>
+                        <span id="latValue" class="label-val">4.5° (Palo Derecho ➡️)</span>
+                    </div>
+                    <input type="range" id="latSlider" class="slider-input" min="-12" max="12" step="0.5" value="4.5">
+                </div>
+
+                <!-- Ubicación de la Diana (Target) -->
+                <div class="control-group">
+                    <div class="control-label-row">
+                        <span class="label-title">🎯 Posición de la Diana</span>
+                        <span id="targetPosLabel" class="label-val">Ángulo Der. (X: +2.8m, Y: 2.15m)</span>
+                    </div>
+                    <div class="dist-presets" style="flex-wrap: wrap;">
+                        <button class="dist-pill target-pill active" data-tx="2.8" data-ty="2.15" data-name="Ángulo Der.">Ángulo Der.</button>
+                        <button class="dist-pill target-pill" data-tx="-2.8" data-ty="2.15" data-name="Ángulo Izq.">Ángulo Izq.</button>
+                        <button class="dist-pill target-pill" data-tx="2.6" data-ty="0.35" data-name="Abajo Der.">Abajo Der.</button>
+                        <button class="dist-pill target-pill" data-tx="-2.6" data-ty="0.35" data-name="Abajo Izq.">Abajo Izq.</button>
+                        <button class="dist-pill target-pill" data-tx="0" data-ty="2.35" data-name="Travesaño">Travesaño</button>
+                        <button class="dist-pill target-pill" data-tx="0" data-ty="1.20" data-name="Centro">Centro</button>
+                    </div>
+                </div>
+
+                <!-- Selector de Planeta (Gravedad) -->
+                <div class="control-group">
+                    <div class="control-label-row">
+                        <span class="label-title">🪐 Planeta (Gravedad)</span>
+                        <span id="planetVal" class="label-val">Tierra (10 m/s²)</span>
+                    </div>
+                    <div class="planet-selector">
+                        <button class="planet-pill active" data-planet="earth" title="Gravedad terrestre: 10 m/s²">
+                            🌍 Tierra
+                        </button>
+                        <button class="planet-pill" data-planet="moon" title="Gravedad lunar baja: 1.62 m/s²">
+                            🌕 Luna
+                        </button>
+                        <button class="planet-pill" data-planet="mars" title="Gravedad marciana: 3.71 m/s²">
+                            🔴 Marte
+                        </button>
+                        <button class="planet-pill" data-planet="jupiter" title="Gravedad colosal: 24.79 m/s²">
+                            🪐 Júpiter
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Opciones de Viento -->
+                <div class="control-group">
+                    <div class="control-label-row">
+                        <span class="label-title">💨 Viento Frontal / Cola (X)</span>
+                        <span id="windXValue" class="label-val">0 m/s (Calma)</span>
+                    </div>
+                    <input type="range" id="windXSlider" class="slider-input" min="-15" max="15" step="1" value="0">
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label-row">
+                        <span class="label-title">💨 Viento Lateral (Z)</span>
+                        <span id="windZValue" class="label-val">0 m/s (Calma)</span>
+                    </div>
+                    <input type="range" id="windZSlider" class="slider-input" min="-15" max="15" step="1" value="0">
+                </div>
+
+                <!-- Comportamiento de la Barrera -->
+                <div id="wallJumpGroup" class="control-group" style="display:none;">
+                    <div class="control-label-row">
+                        <span class="label-title">Salto de la Barrera</span>
+                    </div>
+                    <select id="wallJumpSelect" class="select-input">
+                        <option value="random">🎲 Aleatorio (50% saltan / 50% parados)</option>
+                        <option value="always">⬆️ La barrera siempre salta (H = 2.40m, hueco = 0.55m)</option>
+                        <option value="never">🛑 La barrera nunca salta (H = 1.85m parada)</option>
+                    </select>
+                </div>
+
+                <!-- Botones de Ejecución -->
+                <div class="action-buttons">
+                    <button id="kickBtn" class="btn-kick">
+                        <span>⚽</span> ¡PATEAR!
+                    </button>
+                    <button id="resetBtn" class="btn-reset">
+                        🔄 Reiniciar
+                    </button>
+                </div>
+            </div>
+
+        </aside>
+    </main>
+
+    <!-- SCRIPTS (Orden de carga: Three.js -> Física -> Sonido -> Desafíos -> Escena 3D -> Controlador) -->
+    <script src="js/vendor/three.min.js"></script>
+    <!-- Fallback si Three.js local no carga -->
+    <script>
+        if (typeof THREE === 'undefined') {
+            document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>');
+        }
+    </script>
+    <script src="js/physics.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/challenges.js"></script>
+    <script src="js/scene3d.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
