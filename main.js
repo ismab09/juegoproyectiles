@@ -213,6 +213,14 @@ document.addEventListener('DOMContentLoaded', () => {
     scene.onShotComplete = (result) => {
         showResultBanner(result);
 
+        // Mostrar gráficas después del tiro
+        if (scene.flightPoints && scene.flightPoints.length > 0) {
+            const vi = parseFloat(ui.viSlider.value);
+            const alphaDeg = parseFloat(ui.alphaSlider.value);
+            GraphSystem.drawGraphs(scene.flightPoints, { vi, alphaDeg });
+            setTimeout(() => GraphSystem.show(), 800);
+        }
+
         if (result.outcome && result.outcome.includes('GOAL')) {
             AudioFX.playGoal();
         } else if (result.outcome === 'SAVED') {

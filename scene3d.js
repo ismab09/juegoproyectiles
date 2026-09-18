@@ -381,38 +381,80 @@ class FootballScene {
     }
 
     buildFan(x, y, z, rotY, targetGroup) {
-        const shirtColors = [0x38bdf8, 0xf8fafc, 0xef4444, 0xfacc15, 0x0284c7, 0x10b981, 0x9333ea];
-        const skinColors = [0xf5d0b0, 0xd4a373, 0xaa7a50, 0x8a5a36];
+        const shirtColors = [0x38bdf8, 0xf8fafc, 0xef4444, 0xfacc15, 0x0284c7, 0x10b981, 0x9333ea, 0x64748b, 0x1e293b];
+        const skinColors = [0xf5d0b0, 0xd4a373, 0xaa7a50, 0x8a5a36, 0xc4a77d, 0xe8c9a8];
 
         const fanGroup = new THREE.Group();
 
         const shirtColor = shirtColors[Math.floor(Math.random() * shirtColors.length)];
         const skinColor = skinColors[Math.floor(Math.random() * skinColors.length)];
 
-        const bodyGeo = new THREE.BoxGeometry(0.48, 0.65, 0.32);
+        // Cuerpo más realista con proporciones humanas
+        const bodyGeo = new THREE.BoxGeometry(0.42, 0.58, 0.28);
         const body = new THREE.Mesh(bodyGeo, new THREE.MeshLambertMaterial({ color: shirtColor }));
-        body.position.set(0, 0.35, 0);
+        body.position.set(0, 0.32, 0);
         fanGroup.add(body);
 
-        const headGeo = new THREE.BoxGeometry(0.28, 0.30, 0.28);
+        // Cintura/pelvis
+        const waistGeo = new THREE.BoxGeometry(0.38, 0.12, 0.26);
+        const waist = new THREE.Mesh(waistGeo, new THREE.MeshLambertMaterial({ color: 0x1e293b }));
+        waist.position.set(0, 0.06, 0);
+        fanGroup.add(waist);
+
+        // Cabeza ovalada más realista
+        const headGeo = new THREE.SphereGeometry(0.14, 16, 16);
         const head = new THREE.Mesh(headGeo, new THREE.MeshLambertMaterial({ color: skinColor }));
-        head.position.set(0, 0.85, 0);
+        head.position.set(0, 0.78, 0);
+        head.scale.set(1, 1.15, 0.95);
         fanGroup.add(head);
 
-        const hairGeo = new THREE.BoxGeometry(0.30, 0.12, 0.30);
-        const hairColor = Math.random() > 0.4 ? (Math.random() > 0.5 ? 0x221711 : 0x4a2c16) : shirtColor;
+        // Cuello
+        const neckGeo = new THREE.CylinderGeometry(0.06, 0.07, 0.08, 8);
+        const neck = new THREE.Mesh(neckGeo, new THREE.MeshLambertMaterial({ color: skinColor }));
+        neck.position.set(0, 0.62, 0);
+        fanGroup.add(neck);
+
+        // Pelo con más variedad
+        const hairGeo = new THREE.SphereGeometry(0.15, 16, 16);
+        const hairType = Math.random();
+        let hairColor;
+        if (hairType < 0.3) hairColor = 0x221711; // Negro
+        else if (hairType < 0.55) hairColor = 0x4a2c16; // Castaño
+        else if (hairType < 0.75) hairColor = 0x8B4513; // Rubio oscuro
+        else if (hairType < 0.85) hairColor = 0xDAA520; // Rubio
+        else if (hairType < 0.92) hairColor = 0x808080; // Gris
+        else hairColor = 0xffffff; // Blanco/calvo
+        
         const hair = new THREE.Mesh(hairGeo, new THREE.MeshLambertMaterial({ color: hairColor }));
-        hair.position.set(0, 0.98, 0);
+        hair.position.set(0, 0.82, -0.02);
+        hair.scale.set(1, 0.7, 0.9);
         fanGroup.add(hair);
 
-        const armMat = new THREE.MeshLambertMaterial({ color: shirtColor });
-        const armL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.45, 0.12), armMat);
-        armL.position.set(-0.32, 0.45, 0.1);
+        // Brazos articulados
+        const armMat = new THREE.MeshLambertMaterial({ color: skinColor });
+        const armGeo = new THREE.CylinderGeometry(0.05, 0.06, 0.38, 8);
+        
+        const armL = new THREE.Mesh(armGeo, armMat);
+        armL.position.set(-0.28, 0.42, 0.08);
+        armL.rotation.z = 0.15;
         fanGroup.add(armL);
 
         const armR = armL.clone();
-        armR.position.x = 0.32;
+        armR.position.x = 0.28;
+        armR.rotation.z = -0.15;
         fanGroup.add(armR);
+
+        // Piernas
+        const legMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
+        const legGeo = new THREE.CylinderGeometry(0.06, 0.07, 0.42, 8);
+        
+        const legL = new THREE.Mesh(legGeo, legMat);
+        legL.position.set(-0.12, -0.22, 0);
+        fanGroup.add(legL);
+
+        const legR = legL.clone();
+        legR.position.x = 0.12;
+        fanGroup.add(legR);
 
         fanGroup.position.set(x, y, z);
         fanGroup.rotation.y = rotY || 0;

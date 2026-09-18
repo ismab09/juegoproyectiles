@@ -443,6 +443,11 @@ const Physics = {
             bounced,
             gkReached: false
         };
+    },
+
+    // Función auxiliar para obtener aceleración en X (viento)
+    getAx: function() {
+        return this.ax || 0;
     }
 };
 
