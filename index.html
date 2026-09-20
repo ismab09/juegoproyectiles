@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tiro Libre Cinemático - Física de Proyectiles en 3D</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="style.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22><text y=%2222%22 font-size=%2222%22>⚽</text></svg>">
 </head>
 <body>
@@ -299,17 +299,17 @@
     </main>
 
     <!-- SCRIPTS (Orden de carga: Three.js -> Física -> Sonido -> Desafíos -> Escena 3D -> Controlador) -->
-    <script src="js/vendor/three.min.js"></script>
+    <script src="three.min.js"></script>
     <!-- Fallback si Three.js local no carga -->
     <script>
         if (typeof THREE === 'undefined') {
             document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>');
         }
     </script>
-    <script src="js/physics.js"></script>
-    <script src="js/audio.js"></script>
-    <script src="js/challenges.js"></script>
-    <script src="js/scene3d.js"></script>
-    <script src="js/main.js"></script>
+    <script src="physics.js"></script>
+    <script src="audio.js"></script>
+    <script src="challenges.js"></script>
+    <script src="scene3d.js"></script>
+    <script src="main.js"></script>
 </body>
 </html>
