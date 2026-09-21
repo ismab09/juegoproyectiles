@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2. Estado de la aplicación
     const state = {
-        currentMode: 'top_corner', // 'top_corner', 'low_shot', 'wall_over', 'wall_under'
+        wallEnabled: false,
         distGoal: 22,             // Distancia en metros (16 a 35)
         distWall: 9.15,           // Distancia reglamentaria de la barrera
         vi: 22.0,                 // Velocidad inicial en m/s
@@ -26,13 +26,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Elementos del DOM
     const ui = {
-        // Modos
+        // Barrera
         modeBtns: document.querySelectorAll('.mode-tab'),
         // Distancia
         distSlider: document.getElementById('distSlider'),
         distValue: document.getElementById('distValue'),
         distLabelVal: document.getElementById('distLabelVal'),
-        distPills: document.querySelectorAll('.dist-pill'),
+        distPills: document.querySelectorAll('.dist-pill[data-dist]'),
         // Sliders de tiro
         viSlider: document.getElementById('viSlider'),
         viValue: document.getElementById('viValue'),
@@ -84,9 +84,16 @@ document.addEventListener('DOMContentLoaded', () => {
         resultDetail: document.getElementById('resultDetail')
     };
 
-    // Inicializar Desafío para el modo actual
-    function loadChallenge() {
-        state.currentChallenge = Challenges.generateChallenge(state.currentMode, state.distGoal);
+    function setWallEnabled(enabled) {
+        state.wallEnabled = enabled;
+        ui.modeBtns.forEach(btn => {
+            btn.classList.toggle('active', (btn.dataset.wall === 'true') === enabled);
+        });
+        loadChallenge();
+    }
+
+    function updateChallengeUIOnly() {
+        state.currentChallenge = Challenges.generateChallenge(state.wallEnabled, state.distGoal);
         const ch = state.currentChallenge;
 
         ui.challengeTitle.textContent = ch.title;
@@ -109,7 +116,42 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        const hasWall = ch.wallActive;
+        if (ui.wallJumpGroup) {
+            ui.wallJumpGroup.style.display = state.wallEnabled ? 'flex' : 'none';
+        }
+        if (ui.wallTelemetryRow) {
+            ui.wallTelemetryRow.style.display = state.wallEnabled ? 'flex' : 'none';
+        }
+
+        updateTelemetryPreview();
+    }
+
+    // Inicializar Desafío para el modo actual
+    function loadChallenge() {
+        state.currentChallenge = Challenges.generateChallenge(state.wallEnabled, state.distGoal);
+        const ch = state.currentChallenge;
+
+        ui.challengeTitle.textContent = ch.title;
+        ui.challengeBadge.textContent = ch.badge;
+        ui.challengeQuestion.innerHTML = formatMarkdown(ch.question);
+        ui.answerUnit.textContent = ch.unknownUnit;
+        ui.answerInput.value = '';
+        ui.answerFeedback.className = 'feedback-msg';
+        ui.answerFeedback.textContent = '';
+        ui.stepByStepBox.style.display = 'none';
+        ui.toggleStepsBtn.textContent = '📖 Ver Paso a Paso';
+
+        ui.stepByStepBox.innerHTML = ch.stepByStep.map(s => `<p>${formatMarkdown(s)}</p>`).join('');
+
+        ui.formulaCards.forEach(card => {
+            if (card.dataset.formula === ch.formulaId) {
+                card.classList.add('highlighted');
+            } else {
+                card.classList.remove('highlighted');
+            }
+        });
+
+        const hasWall = state.wallEnabled;
         scene.setWallVisibility(hasWall);
         if (ui.wallJumpGroup) {
             ui.wallJumpGroup.style.display = hasWall ? 'flex' : 'none';
@@ -117,8 +159,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (ui.wallTelemetryRow) {
             ui.wallTelemetryRow.style.display = hasWall ? 'flex' : 'none';
         }
-
-        scene.setTargetMode(ch.targetType);
 
         // Actualizar desplazamiento táctico de la barrera
         scene.setWallLateralAim(state.lateralAngleDeg);
@@ -147,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ui.telemetryVfy.textContent = `${vfy.toFixed(1)} m/s`;
         ui.telemetryYGoal.textContent = `${Math.max(0, yGoal).toFixed(2)} m`;
 
-        if (state.currentChallenge && state.currentChallenge.wallActive) {
+        if (state.wallEnabled) {
             const tWall = Physics.getTimeForDistance(0, state.distWall, vi, alphaRad);
             const yWall = Physics.getYf(0.11, vi, alphaRad, tWall);
             ui.telemetryYWall.textContent = `${Math.max(0, yWall).toFixed(2)} m`;
@@ -183,7 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const latRad = Physics.degToRad(latDeg);
 
         let willJump = false;
-        if (state.currentChallenge.wallActive) {
+        if (state.wallEnabled) {
             if (state.wallJumpMode === 'always') willJump = true;
             else if (state.wallJumpMode === 'never') willJump = false;
             else willJump = Math.random() >= 0.45;
@@ -197,7 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
             alphaDeg: alphaDeg,
             lateralAngleDeg: latDeg,
             wallJumps: willJump,
-            wallActive: state.currentChallenge.wallActive,
+            wallActive: state.wallEnabled,
             wallCenterZ: scene.wallLateralOffset
         });
 
@@ -248,14 +288,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Conectar Eventos de la Interfaz
     // =========================================================================
 
-    // Cambio de modo
+    // Mostrar u ocultar la barrera sin alterar la diana
     ui.modeBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            ui.modeBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            state.currentMode = btn.dataset.mode;
-            scene.resetBall();
-            loadChallenge();
+            setWallEnabled(btn.dataset.wall === 'true');
         });
     });
 
@@ -272,6 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ui.distPills.forEach(pill => {
         pill.addEventListener('click', () => {
             const val = parseInt(pill.dataset.dist);
+            if (!Number.isFinite(val)) return;
             ui.distSlider.value = val;
             state.distGoal = val;
             ui.distValue.textContent = `${val} m`;
@@ -290,21 +327,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const ty = parseFloat(pill.dataset.ty);
             const name = pill.dataset.name || pill.textContent.trim();
             state.activeTarget = { x: tx, y: ty, name: name };
-            
-            // Actualizar diana en el espacio 3D sin recargar ni tocar el ejercicio de física
             scene.setTargetPosition(tx, ty);
 
-            // Actualizar etiqueta con coordenadas precisas
             if (ui.targetPosLabel) {
                 const signX = tx > 0 ? '+' : '';
                 ui.targetPosLabel.textContent = `${name} (X: ${signX}${tx}m, Y: ${ty}m)`;
             }
 
-            // Auto-ajustar ángulo lateral según la distancia actual al arco
-            const latRad = Math.atan2(tx, state.distGoal);
-            const latDeg = latRad * (180 / Math.PI);
-            ui.latSlider.value = latDeg.toFixed(1);
-            ui.latSlider.dispatchEvent(new Event('input'));
+            // No se dispara el slider lateral desde una selección de diana.
+            // Eso mutaría la barrera y el resto de la escena al hacer click en la diana.
         });
     });
 

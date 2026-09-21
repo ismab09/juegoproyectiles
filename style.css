@@ -151,6 +151,34 @@ header {
     height: 100%;
 }
 
+#sceneContainer .webgl-warning {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 24px;
+    text-align: center;
+    color: var(--text-primary);
+    background: linear-gradient(180deg, rgba(8, 14, 26, 0.96), rgba(15, 23, 42, 0.92));
+    border: 1px solid var(--border-color);
+    font-weight: 600;
+}
+
+#sceneContainer .webgl-warning strong {
+    font-size: 1.2rem;
+    color: var(--accent-gold);
+}
+
+#sceneContainer .webgl-warning span {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    max-width: 320px;
+}
+
 /* Overlays en el Viewport */
 .viewport-overlay-top {
     position: absolute;
