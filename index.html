@@ -93,9 +93,11 @@
             </div>
 
             <!-- BANNER DE RESULTADO / GOL -->
-            <div id="resultBanner" class="result-banner">
+            <div id="resultBanner" class="result-banner" role="status" aria-live="polite">
+                <button id="closeResultBtn" class="result-close-btn" type="button" aria-label="Cerrar resultado">×</button>
                 <div id="resultTitle" class="result-title">¡GOOOOOL!</div>
                 <div id="resultDetail" class="result-detail">Llegada: t = 1.15s | Altura: 2.10m</div>
+                <button id="showGraphsBtn" class="graphs-open-btn" type="button">Ver gráficas</button>
             </div>
         </section>
 
@@ -291,6 +293,16 @@
 
         </aside>
     </main>
+
+    <div id="graphsModal" class="graphs-modal" aria-hidden="true">
+        <div class="graphs-dialog" role="dialog" aria-modal="true" aria-labelledby="graphsTitle">
+            <div class="graphs-header">
+                <h2 id="graphsTitle">Gráficas del tiro</h2>
+                <button id="closeGraphsBtn" class="graphs-close-btn" type="button" aria-label="Cerrar">×</button>
+            </div>
+            <div id="graphsGrid" class="graphs-grid"></div>
+        </div>
+    </div>
 
     <!-- SCRIPTS (Orden de carga: Three.js -> Física -> Sonido -> Desafíos -> Escena 3D -> Controlador) -->
     <script src="three.min.js"></script>

@@ -32,6 +32,10 @@ class FootballScene {
         this.targetMarker = null;
         this.trajectoryLine = null;
         this.sprayLines = [];
+        this.goalkeeperHitboxes = [];
+        this.previousBallPosition = new THREE.Vector3();
+        this.goalkeeperRebound = null;
+        this.shotSamples = [];
 
         // Elementos de la Tribuna Retro
         this.standsGroup = null;
@@ -86,6 +90,7 @@ class FootballScene {
         this.wallJumps = false;
         this.onShotComplete = null;
         this.activeShotResult = null;
+        this.shotCompleted = true;
 
         this.init();
         this.container.__scene = this;
@@ -684,322 +689,233 @@ setupLighting() {
     // =========================================================================
     // ARQUERO FERNANDO MUSLERA: MODELO REALISTA, VUELO LATERAL Y RETORNO
     // =========================================================================
-    createMuslera() {
+createMuslera() {
         this.goalkeeper = new THREE.Group();
-
-        const jerseyNeonMat = new THREE.MeshLambertMaterial({ color: 0xf97316 });
-        const jerseyTrimMat = new THREE.MeshLambertMaterial({ color: 0x0f172a });
-        const skinMat = new THREE.MeshLambertMaterial({ color: 0xd4a373 });
-        const glovePalmMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.8 });
-        const gloveBackMat = new THREE.MeshLambertMaterial({ color: 0xef4444 });
-        const hairMat = new THREE.MeshLambertMaterial({ color: 0x1c1917 });
-        const shortsMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
-        const socksMat = new THREE.MeshLambertMaterial({ color: 0xf97316 });
-        const bootsMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 });
-
-        this.gkLegL = new THREE.Group();
-        this.gkLegL.position.set(-0.22, 0.95, 0.1);
-
-        const thighL = new THREE.Mesh(new THREE.CylinderGeometry(0.105, 0.085, 0.5, 16), skinMat);
-        thighL.position.set(0, -0.22, 0);
-        this.gkLegL.add(thighL);
-
-        const padL = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.14), jerseyTrimMat);
-        padL.position.set(0, -0.44, 0.02);
-        this.gkLegL.add(padL);
-
-        const calfL = new THREE.Mesh(new THREE.CylinderGeometry(0.082, 0.07, 0.54, 16), socksMat);
-        calfL.position.set(0, -0.7, 0);
-        this.gkLegL.add(calfL);
-
-        const bootL = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.1, 0.28), bootsMat);
-        bootL.position.set(0, -0.97, 0.05);
-        this.gkLegL.add(bootL);
-
-        this.goalkeeper.add(this.gkLegL);
-
-        this.gkLegR = new THREE.Group();
-        this.gkLegR.position.set(0.22, 0.95, 0.1);
-
-        const thighR = new THREE.Mesh(new THREE.CylinderGeometry(0.105, 0.085, 0.5, 16), skinMat);
-        thighR.position.set(0, -0.22, 0);
-        this.gkLegR.add(thighR);
-
-        const padR = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.14), jerseyTrimMat);
-        padR.position.set(0, -0.44, 0.02);
-        this.gkLegR.add(padR);
-
-        const calfR = new THREE.Mesh(new THREE.CylinderGeometry(0.082, 0.07, 0.54, 16), socksMat);
-        calfR.position.set(0, -0.7, 0);
-        this.gkLegR.add(calfR);
-
-        const bootR = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.1, 0.28), bootsMat);
-        bootR.position.set(0, -0.97, 0.05);
-        this.gkLegR.add(bootR);
-
-        this.goalkeeper.add(this.gkLegR);
-
-        const shorts = new THREE.Mesh(new THREE.CylinderGeometry(0.29, 0.30, 0.36, 12), shortsMat);
-        shorts.position.set(0, 1.08, 0.02);
-        shorts.castShadow = true;
-        this.goalkeeper.add(shorts);
-
-        const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.21, 0.68, 16), jerseyNeonMat);
-        torso.scale.z = 0.74;
-        torso.position.set(0, 1.58, 0.03);
-        torso.castShadow = true;
-        this.goalkeeper.add(torso);
-
-        const sidePanelL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.54, 0.3), jerseyTrimMat);
-        sidePanelL.position.set(-0.28, 1.58, 0.03);
-        this.goalkeeper.add(sidePanelL);
-
-        const sidePanelR = sidePanelL.clone();
-        sidePanelR.position.x = 0.28;
-        this.goalkeeper.add(sidePanelR);
-
-        const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.1, 0.16, 14), skinMat);
-        neck.position.set(0, 1.96, 0.02);
-        this.goalkeeper.add(neck);
-
-        const shoulderL = new THREE.Mesh(new THREE.SphereGeometry(0.11, 16, 16), jerseyNeonMat);
-        shoulderL.position.set(-0.36, 1.8, 0.02);
-        this.goalkeeper.add(shoulderL);
-
-        const shoulderR = shoulderL.clone();
-        shoulderR.position.x = 0.36;
-        this.goalkeeper.add(shoulderR);
-
-        this.gkArmBaseL = { z: 0.72, x: -0.18 };
-        this.gkArmBaseR = { z: -0.72, x: -0.18 };
-
-        this.gkArmL = new THREE.Group();
-        this.gkArmL.position.set(-0.36, 1.82, 0.02);
-        this.gkArmL.rotation.z = this.gkArmBaseL.z;
-        this.gkArmL.rotation.x = this.gkArmBaseL.x;
-
-        const armMeshL = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.063, 0.54, 12), jerseyNeonMat);
-        armMeshL.position.set(0, -0.26, 0);
-        this.gkArmL.add(armMeshL);
-
-        const armBandL = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.08, 12), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
-        armBandL.position.set(0, -0.12, 0);
-        this.gkArmL.add(armBandL);
-
-        const gloveLGroup = new THREE.Group();
-        gloveLGroup.position.set(0, -0.57, 0.02);
-
-        const glovePalmL = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.2, 0.08), gloveBackMat);
-        gloveLGroup.add(glovePalmL);
-
-        const palmL = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.18), glovePalmMat);
-        palmL.position.set(0, 0, 0.045);
-        gloveLGroup.add(palmL);
-
-        for (let f = 0; f < 4; f++) {
-            const finger = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.018, 0.09, 8), gloveBackMat);
-            finger.position.set(-0.05 + f * 0.033, -0.12, 0);
-            gloveLGroup.add(finger);
-        }
-
-        const thumbL = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.018, 0.08, 8), gloveBackMat);
-        thumbL.rotation.z = -Math.PI / 4;
-        thumbL.position.set(0.08, -0.035, 0.02);
-        gloveLGroup.add(thumbL);
-
-        this.gkArmL.add(gloveLGroup);
-        this.gkGloveL = gloveLGroup;
-        this.goalkeeper.add(this.gkArmL);
-
-        this.gkArmR = new THREE.Group();
-        this.gkArmR.position.set(0.36, 1.82, 0.02);
-        this.gkArmR.rotation.z = this.gkArmBaseR.z;
-        this.gkArmR.rotation.x = this.gkArmBaseR.x;
-
-        const armMeshR = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.063, 0.54, 12), jerseyNeonMat);
-        armMeshR.position.set(0, -0.26, 0);
-        this.gkArmR.add(armMeshR);
-
-        const gloveRGroup = new THREE.Group();
-        gloveRGroup.position.set(0, -0.57, 0.02);
-
-        const glovePalmR = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.2, 0.08), gloveBackMat);
-        gloveRGroup.add(glovePalmR);
-
-        const palmR = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.18), glovePalmMat);
-        palmR.position.set(0, 0, 0.045);
-        gloveRGroup.add(palmR);
-
-        for (let f = 0; f < 4; f++) {
-            const finger = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.018, 0.09, 8), gloveBackMat);
-            finger.position.set(-0.05 + f * 0.033, -0.12, 0);
-            gloveRGroup.add(finger);
-        }
-
-        const thumbR = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.018, 0.08, 8), gloveBackMat);
-        thumbR.rotation.z = Math.PI / 4;
-        thumbR.position.set(-0.08, -0.035, 0.02);
-        gloveRGroup.add(thumbR);
-
-        this.gkArmR.add(gloveRGroup);
-        this.gkGloveR = gloveRGroup;
-        this.goalkeeper.add(this.gkArmR);
-
-        const head = new THREE.Mesh(new THREE.SphereGeometry(0.135, 18, 18), skinMat);
-        head.position.set(0, 2.12, 0.02);
-        head.castShadow = true;
-        this.goalkeeper.add(head);
-
-        const hair = new THREE.Mesh(new THREE.SphereGeometry(0.14, 14, 14, 0, Math.PI * 2, 0, Math.PI / 2.1), hairMat);
-        hair.position.set(0, 2.15, 0.02);
-        this.goalkeeper.add(hair);
-
-        const beard = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.09, 0.12), new THREE.MeshLambertMaterial({ color: 0x33261d }));
-        beard.position.set(0, 2.03, 0.09);
-        this.goalkeeper.add(beard);
-
-        const nose = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.06, 6), skinMat);
-        nose.rotation.x = -Math.PI / 2;
-        nose.position.set(0, 2.09, 0.15);
-        this.goalkeeper.add(nose);
-
-        this.goalkeeper.position.set(0, 0, this.goalZ + 0.35);
-        this.scene.add(this.goalkeeper);
+        this.goalkeeper.name = 'goalkeeperRoot';
+        const kit = new THREE.MeshStandardMaterial({ color: 0x38a7d1, roughness: 0.72 });
+        const trim = new THREE.MeshStandardMaterial({ color: 0x18354e, roughness: 0.76 });
+        const shorts = new THREE.MeshStandardMaterial({ color: 0x101820, roughness: 0.82 });
+        const skin = new THREE.MeshStandardMaterial({ color: 0xc99068, roughness: 0.9 });
+        const gloves = new THREE.MeshStandardMaterial({ color: 0xd8f1ff, roughness: 0.55 });
+        const boots = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.7 });
+        const segment = (joint, length, top, bottom, material) => {
+            const mesh = new THREE.Mesh(new THREE.CylinderGeometry(bottom, top, length, 14), material);
+            mesh.position.y = -length / 2; mesh.castShadow = true; joint.add(mesh); return mesh;
+        };
+        this.gkPelvis = new THREE.Group(); this.gkPelvis.position.y = 1.02; this.goalkeeper.add(this.gkPelvis);
+        const pelvisMesh = new THREE.Mesh(new THREE.CylinderGeometry(.22, .25, .25, 14), shorts); pelvisMesh.scale.z=.72; this.gkPelvis.add(pelvisMesh);
+        const leg = (side) => {
+            const thigh = new THREE.Group(); thigh.position.set(side*.17,-.08,0); segment(thigh,.47,.105,.085,shorts);
+            const knee = new THREE.Group(); knee.position.y=-.47; segment(knee,.48,.082,.065,trim); thigh.add(knee);
+            const foot = new THREE.Group(); foot.position.y=-.48; const shoe=new THREE.Mesh(new THREE.SphereGeometry(.1,12,8),boots); shoe.scale.set(.78,.55,1.65); shoe.position.z=-.08; foot.add(shoe); knee.add(foot);
+            this.gkPelvis.add(thigh); return {thigh,knee,foot};
+        };
+        const leftLeg=leg(-1), rightLeg=leg(1);
+        this.gkLegL=leftLeg.thigh; this.gkKneeL=leftLeg.knee; this.gkFootL=leftLeg.foot;
+        this.gkLegR=rightLeg.thigh; this.gkKneeR=rightLeg.knee; this.gkFootR=rightLeg.foot;
+        this.gkTorso=new THREE.Group(); this.gkTorso.position.y=1.00; this.goalkeeper.add(this.gkTorso);
+        const torsoMesh=new THREE.Mesh(new THREE.CylinderGeometry(.285,.215,.58,18),kit); torsoMesh.position.y=.29; torsoMesh.scale.z=.72; torsoMesh.castShadow=true; this.gkTorso.add(torsoMesh);
+        const head=new THREE.Group(); head.position.y=.73; const face=new THREE.Mesh(new THREE.SphereGeometry(.135,18,16),skin); face.scale.y=1.12; head.add(face); this.gkTorso.add(head); this.gkHead=head;
+        const arm=(side)=>{
+            const upper=new THREE.Group(); upper.position.set(side*.30,.51,0); segment(upper,.31,.07,.06,kit);
+            const fore=new THREE.Group(); fore.position.y=-.31; segment(fore,.31,.06,.052,skin); upper.add(fore);
+            const glove=new THREE.Group(); glove.position.y=-.32; const palm=new THREE.Mesh(new THREE.SphereGeometry(.105,12,10),gloves); palm.scale.set(.9,1.15,.48); glove.add(palm); fore.add(glove);
+            this.gkTorso.add(upper); return {upper,fore,glove};
+        };
+        const leftArm=arm(-1), rightArm=arm(1);
+        this.gkArmL=leftArm.upper; this.gkForearmL=leftArm.fore; this.gkGloveL=leftArm.glove;
+        this.gkArmR=rightArm.upper; this.gkForearmR=rightArm.fore; this.gkGloveR=rightArm.glove;
+        this.gkArmBaseL={z:.55,x:-.10}; this.gkArmBaseR={z:-.55,x:-.10};
+        this.goalkeeper.position.set(0,0,this.goalZ+.35); this.scene.add(this.goalkeeper);
+        this.setGoalkeeperNeutralPose();
+        this.createGoalkeeperHitboxes();
     }
 
-    // =========================================================================
-    // 10. FUTBOLISTA PATEADOR REALISTA JUNTO AL BALÓN
-    // =========================================================================
-    createKicker() {
-        this.kicker = new THREE.Group();
+    setGoalkeeperNeutralPose() {
+        if (!this.goalkeeper) return;
+        this.restoreGoalkeeperLimbs();
+        this.goalkeeper.position.set(0,0,this.goalZ+.35); this.goalkeeper.rotation.set(0,0,0);
+        this.gkPelvis.position.set(0,1.02,0); this.gkPelvis.rotation.set(.08,0,0);
+        this.gkTorso.position.set(0,1.00,0); this.gkTorso.rotation.set(.13,0,0);
+        this.gkLegL.rotation.set(-.10,0,.10); this.gkLegR.rotation.set(-.10,0,-.10);
+        this.gkKneeL.rotation.set(.22,0,0); this.gkKneeR.rotation.set(.22,0,0);
+        this.gkArmL.rotation.set(-.10,0,.55); this.gkArmR.rotation.set(-.10,0,-.55);
+        this.gkForearmL.rotation.set(0,0,-.20); this.gkForearmR.rotation.set(0,0,.20);
+        this.gkGloveL.rotation.set(0,0,0); this.gkGloveR.rotation.set(0,0,0);
+        this.gkGloveL.position.set(0,-.32,0); this.gkGloveR.position.set(0,-.32,0);
+    }
 
-        const skinMat = new THREE.MeshLambertMaterial({ color: 0xd4a373 });
-        const jerseyMat = new THREE.MeshLambertMaterial({ color: 0x0284c7 });
-        const shortsMat = new THREE.MeshLambertMaterial({ color: 0x0f172a });
-        const socksMat = new THREE.MeshLambertMaterial({ color: 0x38bdf8 });
-        const bootsMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.35 });
-        const lacesMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
-        const studsMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8 });
-
-        function createSoccerBoot() {
-            const boot = new THREE.Group();
-
-            const sole = new THREE.Mesh(new THREE.BoxGeometry(0.125, 0.03, 0.25), bootsMat);
-            sole.position.set(0, 0.015, -0.05);
-            sole.castShadow = true;
-            boot.add(sole);
-
-            const vamp = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.065, 0.15), bootsMat);
-            vamp.position.set(0, 0.05, -0.09);
-            boot.add(vamp);
-
-            const heel = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, 0.10), bootsMat);
-            heel.position.set(0, 0.06, 0.025);
-            boot.add(heel);
-
-            const laces = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.015, 0.09), lacesMat);
-            laces.position.set(0, 0.085, -0.08);
-            boot.add(laces);
-
-            for (let s = -1; s <= 1; s += 2) {
-                const studF = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.008, 0.02, 6), studsMat);
-                studF.position.set(s * 0.04, -0.01, -0.14);
-                boot.add(studF);
-
-                const studM = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.008, 0.02, 6), studsMat);
-                studM.position.set(s * 0.04, -0.01, -0.05);
-                boot.add(studM);
-
-                const studB = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.008, 0.02, 6), studsMat);
-                studB.position.set(s * 0.04, -0.01, 0.04);
-                boot.add(studB);
+    restoreGoalkeeperLimbs() {
+        const limbs = [
+            this.gkArmL, this.gkForearmL, this.gkGloveL,
+            this.gkArmR, this.gkForearmR, this.gkGloveR,
+            this.gkLegL, this.gkKneeL, this.gkFootL,
+            this.gkLegR, this.gkKneeR, this.gkFootR,
+            this.gkPelvis, this.gkTorso, this.gkHead
+        ];
+        limbs.forEach((limb) => {
+            if (!limb) return;
+            limb.visible = true;
+            if (Math.abs(limb.scale.x) < 0.001 || Math.abs(limb.scale.y) < 0.001 || Math.abs(limb.scale.z) < 0.001) {
+                limb.scale.set(1, 1, 1);
             }
-
-            return boot;
-        }
-
-        this.plantFoot = createSoccerBoot();
-        this.plantFoot.position.set(-0.35, 0, -0.02);
-        this.kicker.add(this.plantFoot);
-
-        const plantLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.058, 0.86, 14), socksMat);
-        plantLeg.position.set(-0.35, 0.46, 0.0);
-        plantLeg.rotation.z = -0.05;
-        this.kicker.add(plantLeg);
-
-        this.kickerLegR = new THREE.Group();
-        this.kickerLegR.position.set(0.14, 0.9, 0);
-
-        const kickThigh = new THREE.Mesh(new THREE.CylinderGeometry(0.082, 0.068, 0.44, 14), skinMat);
-        kickThigh.position.set(0, -0.22, 0);
-        this.kickerLegR.add(kickThigh);
-
-        this.kickerKneeR = new THREE.Group();
-        this.kickerKneeR.position.set(0, -0.44, 0);
-
-        const kneeCap = new THREE.Mesh(new THREE.SphereGeometry(0.066, 12, 12), skinMat);
-        kneeCap.position.set(0, 0, 0.01);
-        this.kickerKneeR.add(kneeCap);
-
-        const kickCalf = new THREE.Mesh(new THREE.CylinderGeometry(0.066, 0.054, 0.42, 14), socksMat);
-        kickCalf.position.set(0, -0.21, 0);
-        this.kickerKneeR.add(kickCalf);
-
-        this.kickBoot = createSoccerBoot();
-        this.kickBoot.position.set(0, -0.42, 0);
-        this.kickBoot.rotation.y = -0.15;
-        this.kickerKneeR.add(this.kickBoot);
-
-        this.kickerLegR.add(this.kickerKneeR);
-        this.kicker.add(this.kickerLegR);
-
-        this.kickerTorso = new THREE.Group();
-        this.kickerTorso.position.set(-0.10, 1.05, 0);
-
-        const shorts = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.27, 0.34, 12), shortsMat);
-        shorts.position.set(0, 0.03, 0.02);
-        this.kickerTorso.add(shorts);
-
-        const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.18, 0.58, 16), jerseyMat);
-        torso.scale.z = 0.75;
-        torso.position.set(0, 0.38, 0.02);
-        torso.castShadow = true;
-        this.kickerTorso.add(torso);
-
-        const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.12, 12), skinMat);
-        neck.position.set(0, 0.72, 0.02);
-        this.kickerTorso.add(neck);
-
-        const head = new THREE.Mesh(new THREE.SphereGeometry(0.13, 18, 18), skinMat);
-        head.position.set(0, 0.84, 0.05);
-        head.rotation.x = -0.12;
-        this.kickerTorso.add(head);
-
-        const hair = new THREE.Mesh(new THREE.SphereGeometry(0.13, 14, 14, 0, Math.PI * 2, 0, Math.PI / 2.1), new THREE.MeshLambertMaterial({ color: 0x1c1917 }));
-        hair.position.set(0, 0.90, 0.04);
-        this.kickerTorso.add(hair);
-
-        this.kicker.add(this.kickerTorso);
-
-        this.kickerArmL = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.05, 0.5, 12), jerseyMat);
-        this.kickerArmL.position.set(-0.38, 1.45, 0.08);
-        this.kickerArmL.rotation.z = 0.55;
-        this.kickerArmL.rotation.x = -0.35;
-        this.kicker.add(this.kickerArmL);
-
-        this.kickerArmR = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.05, 0.5, 12), jerseyMat);
-        this.kickerArmR.position.set(0.22, 1.42, -0.06);
-        this.kickerArmR.rotation.z = -0.45;
-        this.kickerArmR.rotation.x = 0.1;
-        this.kicker.add(this.kickerArmR);
-
-        this.kicker.position.set(-0.06, 0, this.shotZ + 0.42);
-        this.scene.add(this.kicker);
+            limb.traverse(child => { child.visible = true; });
+        });
     }
 
-    // =========================================================================
-    // 11. BALÓN REALISTA CON COSTURAS Y SOMBRA DINÁMICA
-    // =========================================================================
+    evaluateGoalkeeperReach(predictedX, predictedY, arrivalTime) {
+        const lateral=Math.abs(predictedX), time=Math.max(.2,arrivalTime||1);
+        const reaction=.20, moveTime=Math.max(0,time-reaction);
+        const bodyReach=THREE.MathUtils.clamp(moveTime*1.65,.18,1.65);
+        const armReach=.67, availableReach=bodyReach+armReach+.14;
+        const verticalReach=1.90+THREE.MathUtils.clamp(moveTime*.48,.08,.52);
+        const normalized=Math.pow(lateral/availableReach,2)+Math.pow(Math.max(0,predictedY-1.25)/Math.max(.4,verticalReach-1.25),2);
+        let kind='STAND_SAVE';
+        if(lateral>.42){ const side=predictedX>0?'RIGHT':'LEFT'; kind=(predictedY<.75?'LOW_DIVE_':predictedY<1.9?'MID_DIVE_':'HIGH_DIVE_')+side; }
+        return {reachable:lateral<=2.8&&predictedY<=2.5&&normalized<=1.12,saveType:kind,requiredReach:lateral,availableReach,bodyReach,predictedX,predictedY,arrivalTime:time};
+    }
+
+    planGoalkeeperSave(result) {
+        const x=result?.zAtGoal||0,y=result?.yAtGoal||1.2,t=result?.tGoal||this.kickDuration||1;
+        const plan=this.evaluateGoalkeeperReach(x,y,t);
+        if(result?.outcome==='POST'||result?.outcome==='CROSSBAR'||result?.outcome==='MISS'||result?.outcome?.startsWith('WALL_HIT')) plan.reachable=false;
+        this.gkPlan=plan; this.gkState='reacting'; return plan;
+    }
+
+    applyGoalkeeperPose(progress) {
+        const p=this.gkPlan; if(!p||!this.goalkeeper)return;
+        this.restoreGoalkeeperLimbs();
+        const e=progress*progress*(3-2*progress), side=Math.sign(p.predictedX)||1;
+        const stand=p.saveType==='STAND_SAVE', low=p.saveType.startsWith('LOW'), high=p.saveType.startsWith('HIGH');
+        const bodyX=stand?p.predictedX*.35:side*Math.min(p.bodyReach,Math.max(.25,Math.abs(p.predictedX)-.55));
+        const lift=stand?Math.max(-.16,Math.min(.18,p.predictedY-1.25)):(low?-.22:high?Math.min(.58,p.predictedY-1.7):.12);
+        this.goalkeeper.position.x=bodyX*e; this.goalkeeper.position.y=lift*e;
+        this.gkPelvis.position.y=1.02+(low?-.18:high?.16:0)*e; this.gkPelvis.rotation.x=.08+(low?.28:-.05)*e;
+        this.gkTorso.rotation.z=(-side*(stand?.08:low?.38:high?.48:.34))*e; this.gkTorso.rotation.x=.13+(low?.20:high?-.10:.02)*e;
+        this.gkLegL.rotation.z=.10+(side>0?-.22:.45)*e; this.gkLegR.rotation.z=-.10+(side>0?-.45:.22)*e;
+        this.gkKneeL.rotation.x=.22+(low?.50:.12)*e; this.gkKneeR.rotation.x=.22+(low?.50:.12)*e;
+        const primary=side>0?this.gkArmR:this.gkArmL, secondary=side>0?this.gkArmL:this.gkArmR;
+        const primaryFore=side>0?this.gkForearmR:this.gkForearmL, secondaryFore=side>0?this.gkForearmL:this.gkForearmR;
+        const shoulderX=bodyX+side*.30, shoulderY=.96+.51+lift;
+        const dx=p.predictedX-shoulderX,dy=p.predictedY-shoulderY;
+        const aim=THREE.MathUtils.clamp(Math.atan2(dx,-dy),-1.62,1.62);
+        primary.rotation.z=THREE.MathUtils.lerp(side>0?-.55:.55,aim,e); primary.rotation.x=THREE.MathUtils.lerp(-.10,-.28,e);
+        primaryFore.rotation.z=THREE.MathUtils.lerp(side>0?.20:-.20,0,e);
+        secondary.rotation.z=THREE.MathUtils.lerp(side>0?.55:-.55,aim*.72,e); secondaryFore.rotation.z=THREE.MathUtils.lerp(side>0?-.20:.20,0,e);
+    }
+
+    createGoalkeeperHitboxes() {
+        const addSphere = (parent, position, radius, name) => {
+            const anchor = new THREE.Object3D();
+            anchor.position.copy(position);
+            parent.add(anchor);
+            this.goalkeeperHitboxes.push({ anchor, radius, name, center: new THREE.Vector3() });
+        };
+        // Orden de prioridad: primero las partes que realmente realizan la atajada.
+        addSphere(this.gkGloveL, new THREE.Vector3(), 0.14, 'guante izquierdo');
+        addSphere(this.gkGloveR, new THREE.Vector3(), 0.14, 'guante derecho');
+        addSphere(this.gkArmL, new THREE.Vector3(0, -0.27, 0), 0.10, 'brazo izquierdo');
+        addSphere(this.gkArmR, new THREE.Vector3(0, -0.27, 0), 0.10, 'brazo derecho');
+        addSphere(this.goalkeeper, new THREE.Vector3(0, 2.12, 0.02), 0.15, 'cabeza');
+        addSphere(this.goalkeeper, new THREE.Vector3(0, 1.52, 0.03), 0.24, 'torso');
+        addSphere(this.gkLegL, new THREE.Vector3(0, -0.45, 0), 0.13, 'pierna izquierda');
+        addSphere(this.gkLegR, new THREE.Vector3(0, -0.45, 0), 0.13, 'pierna derecha');
+    }
+
+    checkGoalkeeperCollision(ballPosition, ballRadius = 0.11) {
+        if (!this.goalkeeper || !this.goalkeeperHitboxes.length) return null;
+        if (Math.abs(ballPosition.z - this.goalZ) >= 1.2) return null;
+        // Límite humano aproximado: fuera de este volumen el arquero no llega.
+        if (Math.abs(ballPosition.x) > 2.75 || ballPosition.y > 2.50) return null;
+        this.goalkeeper.updateMatrixWorld(true);
+        const start = this.previousBallPosition || ballPosition;
+        const segment = ballPosition.clone().sub(start);
+        const lengthSq = segment.lengthSq();
+        for (const hitbox of this.goalkeeperHitboxes) {
+            hitbox.anchor.getWorldPosition(hitbox.center);
+            const t = lengthSq > 0 ? THREE.MathUtils.clamp(hitbox.center.clone().sub(start).dot(segment) / lengthSq, 0, 1) : 0;
+            const closest = start.clone().addScaledVector(segment, t);
+            if (closest.distanceToSquared(hitbox.center) <= Math.pow(hitbox.radius + ballRadius, 2)) {
+                // El torso solo bloquea remates que realmente pasan por el cuerpo.
+                if (hitbox.name === 'torso' && Math.abs(closest.x - hitbox.center.x) > 0.26) continue;
+                return { name: hitbox.name, center: hitbox.center.clone(), contact: closest };
+            }
+        }
+        return null;
+    }
+
+    buildShotSamples(points) {
+        return points.map((point, index) => {
+            const previous = points[Math.max(0, index - 1)];
+            const next = points[Math.min(points.length - 1, index + 1)];
+            const dt = Math.max(0.001, next.t - previous.t);
+            const vx = (next.x - previous.x) / dt;
+            const vy = (next.y - previous.y) / dt;
+            let ax = 0, ay = 0;
+            if (index > 0 && index < points.length - 1) {
+                const dt1 = Math.max(0.001, point.t - previous.t);
+                const dt2 = Math.max(0.001, next.t - point.t);
+                ax = ((next.x - point.x) / dt2 - (point.x - previous.x) / dt1) / ((dt1 + dt2) / 2);
+                ay = ((next.y - point.y) / dt2 - (point.y - previous.y) / dt1) / ((dt1 + dt2) / 2);
+            }
+            return { t: point.t, x: point.x, y: point.y, vx, vy, ax, ay };
+        });
+    }
+
+    registerGoalkeeperImpact(hit, currentPt, elapsed) {
+        console.log('ATAJADA', {
+            parte: hit.name,
+            pelota: this.ball.position.clone(),
+            centroHitbox: hit.center.clone()
+        });
+        const away = this.ball.position.clone().sub(hit.center).normalize();
+        if (away.lengthSq() === 0) away.set(this.ball.position.x >= 0 ? 1 : -1, 0.35, 0.45);
+        away.y = Math.max(0.25, away.y);
+        away.z = Math.max(0.3, away.z);
+        away.normalize();
+        this.ball.position.copy(hit.contact).addScaledVector(away, 0.13);
+        this.goalkeeperRebound = { startTime: performance.now(), start: this.ball.position.clone(), velocity: away.multiplyScalar(3.2), duration: 0.65 };
+        this.isKicking = false;
+        this.activeShotResult = { ...this.activeShotResult, outcome: 'SAVED', message: `¡Atajada con ${hit.name}!`, goalkeeperCollision: true, impactPart: hit.name, tGoal: currentPt.t ?? elapsed, yAtGoal: this.ball.position.y, zAtGoal: this.ball.position.x };
+        const impactTime = currentPt.t ?? elapsed;
+        this.shotSamples = this.shotSamples.filter(sample => sample.t <= impactTime);
+        const last = this.shotSamples[this.shotSamples.length - 1] || { x: currentPt.x, y: currentPt.y };
+        for (let i = 1; i <= 10; i++) {
+            const t = i * this.goalkeeperRebound.duration / 10;
+            this.shotSamples.push({ t: impactTime + t, x: last.x - this.goalkeeperRebound.velocity.z * t, y: Math.max(0.11, last.y + this.goalkeeperRebound.velocity.y * t - 4.9 * t * t), vx: -this.goalkeeperRebound.velocity.z, vy: this.goalkeeperRebound.velocity.y - 9.8 * t, ax: 0, ay: -9.8 });
+        }
+    }
+
+createKicker() {
+        this.kicker=new THREE.Group(); this.kicker.name='kickerRoot';
+        const skin=new THREE.MeshStandardMaterial({color:0xc99068,roughness:.9}), jersey=new THREE.MeshStandardMaterial({color:0x0284c7,roughness:.72});
+        const shorts=new THREE.MeshStandardMaterial({color:0x111827,roughness:.8}), socks=new THREE.MeshStandardMaterial({color:0x38bdf8,roughness:.78}), boots=new THREE.MeshStandardMaterial({color:0xeab308,roughness:.55});
+        const seg=(joint,len,a,b,mat)=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(b,a,len,14),mat);m.position.y=-len/2;m.castShadow=true;joint.add(m);};
+        this.kickerPelvis=new THREE.Group();this.kickerPelvis.position.y=.91;this.kicker.add(this.kickerPelvis);const pm=new THREE.Mesh(new THREE.CylinderGeometry(.20,.23,.24,14),shorts);pm.scale.z=.7;this.kickerPelvis.add(pm);
+        const leg=side=>{const thigh=new THREE.Group();thigh.position.set(side*.15,-.06,0);seg(thigh,.43,.09,.075,skin);const shin=new THREE.Group();shin.position.y=-.43;seg(shin,.44,.072,.055,socks);thigh.add(shin);const foot=new THREE.Group();foot.position.y=-.44;const shoe=new THREE.Mesh(new THREE.SphereGeometry(.09,12,8),boots);shoe.scale.set(.78,.55,1.7);shoe.position.z=-.08;foot.add(shoe);shin.add(foot);this.kickerPelvis.add(thigh);return{thigh,shin,foot};};
+        const ll=leg(-1),rl=leg(1);this.kickerLegL=ll.thigh;this.kickerKneeL=ll.shin;this.plantFoot=ll.foot;this.kickerLegR=rl.thigh;this.kickerKneeR=rl.shin;this.kickBoot=rl.foot;
+        this.kickerTorso=new THREE.Group();this.kickerTorso.position.y=.96;this.kicker.add(this.kickerTorso);const tm=new THREE.Mesh(new THREE.CylinderGeometry(.245,.18,.55,18),jersey);tm.position.y=.275;tm.scale.z=.72;tm.castShadow=true;this.kickerTorso.add(tm);
+        const head=new THREE.Group();head.position.y=.70;const face=new THREE.Mesh(new THREE.SphereGeometry(.13,18,16),skin);face.scale.y=1.1;head.add(face);this.kickerTorso.add(head);
+        const arm=side=>{const upper=new THREE.Group();upper.position.set(side*.27,.48,0);seg(upper,.29,.062,.052,jersey);const fore=new THREE.Group();fore.position.y=-.29;seg(fore,.28,.052,.042,skin);upper.add(fore);this.kickerTorso.add(upper);return{upper,fore};};
+        const la=arm(-1),ra=arm(1);this.kickerArmL=la.upper;this.kickerForearmL=la.fore;this.kickerArmR=ra.upper;this.kickerForearmR=ra.fore;
+        this.kicker.position.set(-.18,0,this.shotZ+.55);this.scene.add(this.kicker);this.resetKickerPose();
+    }
+
+    resetKickerPose() {
+        if(!this.kicker)return;this.kicker.rotation.set(0,0,0);this.kickerPelvis.rotation.set(0,0,0);this.kickerTorso.rotation.set(.06,0,-.05);
+        this.kickerLegL.rotation.set(-.05,0,-.04);this.kickerKneeL.rotation.set(.10,0,0);this.kickerLegR.rotation.set(.08,0,.04);this.kickerKneeR.rotation.set(.08,0,0);
+        this.kickerArmL.rotation.set(-.08,0,.42);this.kickerArmR.rotation.set(.05,0,-.38);this.kickerForearmL.rotation.set(0,0,-.18);this.kickerForearmR.rotation.set(0,0,.18);
+    }
+
+    animateKicker(elapsed) {
+        const smooth=t=>THREE.MathUtils.clamp(t,0,1)**2*(3-2*THREE.MathUtils.clamp(t,0,1));
+        if(elapsed<.10)return;
+        if(elapsed<.24){const p=smooth((elapsed-.10)/.14);this.kickerLegR.rotation.x=THREE.MathUtils.lerp(.08,-.82,p);this.kickerKneeR.rotation.x=THREE.MathUtils.lerp(.08,1.12,p);this.kickerTorso.rotation.x=.06+.12*p;this.kickerTorso.rotation.y=-.12*p;this.kickerArmL.rotation.z=.42+.36*p;this.kickerArmR.rotation.z=-.38-.26*p;}
+        else if(elapsed<.38){const p=smooth((elapsed-.24)/.14);this.kickerLegR.rotation.x=THREE.MathUtils.lerp(-.82,1.02,p);this.kickerKneeR.rotation.x=THREE.MathUtils.lerp(1.12,.04,p);this.kickerPelvis.rotation.y=.20*p;this.kickerTorso.rotation.y=THREE.MathUtils.lerp(-.12,.18,p);}
+        else if(elapsed<.62){const p=smooth((elapsed-.38)/.24);this.kickerLegR.rotation.x=THREE.MathUtils.lerp(1.02,.48,p);this.kickerKneeR.rotation.x=.04+.22*p;this.kickerTorso.rotation.x=THREE.MathUtils.lerp(.18,.08,p);this.kickerArmL.rotation.z=THREE.MathUtils.lerp(.78,.35,p);this.kickerArmR.rotation.z=THREE.MathUtils.lerp(-.64,-.24,p);}
+        else {const p=smooth((elapsed-.62)/.55);this.kickerLegR.rotation.x=THREE.MathUtils.lerp(.48,.08,p);this.kickerKneeR.rotation.x=THREE.MathUtils.lerp(.26,.08,p);this.kickerPelvis.rotation.y=THREE.MathUtils.lerp(.20,0,p);this.kickerTorso.rotation.set(THREE.MathUtils.lerp(.08,.06,p),THREE.MathUtils.lerp(.18,0,p),-.05);this.kickerArmL.rotation.z=THREE.MathUtils.lerp(.35,.42,p);this.kickerArmR.rotation.z=THREE.MathUtils.lerp(-.24,-.38,p);}
+    }
+
     createBall() {
         const ballGeo = new THREE.SphereGeometry(0.11, 32, 32);
 
@@ -1316,8 +1232,11 @@ setupLighting() {
 
     resetBall() {
         this.isKicking = false;
+        this.shotCompleted = true;
+        this.goalkeeperRebound = null;
         this.kickProgress = 0;
         this.ball.position.set(0, 0.11, this.shotZ);
+        this.previousBallPosition.copy(this.ball.position);
         this.ball.rotation.set(0, 0, 0);
 
         if (this.ballShadow) {
@@ -1364,7 +1283,7 @@ setupLighting() {
     }
 
     resetGoalkeeper() {
-        this.gkState = 'resetting';
+        this.gkState = 'ready';
         this.gkTargetX = 0;
         this.gkTargetY = 0;
         this.gkTargetRotZ = 0;
@@ -1374,17 +1293,20 @@ setupLighting() {
         this.gkArmTargetR = { z: -0.65, x: -0.25 };
         this.gkLegTargetL = { z: 0 };
         this.gkLegTargetR = { z: 0 };
-        if (this.gkGloveL) this.gkGloveL.position.z = 0;
-        if (this.gkGloveR) this.gkGloveR.position.z = 0;
+        this.setGoalkeeperNeutralPose();
     }
 
     startKick(points, duration, shotEvaluation, willWallJump) {
+        this.restoreGoalkeeperLimbs();
         this.flightPoints = points;
+        this.shotSamples = this.buildShotSamples(points);
+        this.previousBallPosition.copy(this.ball.position);
         this.kickDuration = duration;
         this.activeShotResult = shotEvaluation;
         this.wallJumps = willWallJump;
         this.kickProgress = 0;
         this.isKicking = true;
+        this.shotCompleted = false;
         this.kickStartTime = performance.now();
 
         // Determinar estirada acrobática de Fernando Muslera evitando atravesar el balón en goles
@@ -1408,22 +1330,22 @@ setupLighting() {
             // ATAJADA: Muslera se estira y sus guantes hacen contacto físico directo con el balón
             if (zLanding > 0.3) {
                 // Vuelo hacia la derecha
-                this.gkTargetX = zLanding - 0.70;
+                this.gkTargetX = Math.min(1.85, Math.max(0, zLanding - 0.82));
                 this.gkTargetY = Math.max(-0.25, Math.min(yLanding - 0.60, 0.95));
                 this.gkTargetRotZ = -1.25; // Inclinación horizontal atlética ~72°
                 this.gkLeapHeight = Math.max(0.35, Math.min(yLanding * 0.45, 0.85));
-                this.gkArmTargetL = { z: 1.85, x: -0.90 }; // Brazos extendidos al balón
-                this.gkArmTargetR = { z: 2.15, x: -1.05 };
+                this.gkArmTargetL = { z: 1.20, x: -0.72 };
+                this.gkArmTargetR = { z: 1.56, x: -0.92 };
                 this.gkLegTargetL = { z: -0.55 }; // Pierna de empuje extendida
                 this.gkLegTargetR = { z: 0.35 };
             } else if (zLanding < -0.3) {
                 // Vuelo hacia la izquierda
-                this.gkTargetX = zLanding + 0.70;
+                this.gkTargetX = Math.max(-1.85, Math.min(0, zLanding + 0.82));
                 this.gkTargetY = Math.max(-0.25, Math.min(yLanding - 0.60, 0.95));
                 this.gkTargetRotZ = 1.25; // Inclinación horizontal ~72°
                 this.gkLeapHeight = Math.max(0.35, Math.min(yLanding * 0.45, 0.85));
-                this.gkArmTargetL = { z: -2.15, x: -1.05 };
-                this.gkArmTargetR = { z: -1.85, x: -0.90 };
+                this.gkArmTargetL = { z: -1.56, x: -0.92 };
+                this.gkArmTargetR = { z: -1.20, x: -0.72 };
                 this.gkLegTargetL = { z: -0.35 };
                 this.gkLegTargetR = { z: 0.55 };
             } else {
@@ -1456,13 +1378,13 @@ setupLighting() {
                 this.gkLegTargetL = { z: -0.25 };
                 this.gkLegTargetR = { z: 0.45 };
             } else {
-                // Balón centrado: Muslera descolocado o se tira engañado
-                this.gkTargetX = Math.random() > 0.5 ? 1.40 : -1.40;
-                this.gkTargetY = -0.15;
-                this.gkTargetRotZ = this.gkTargetX > 0 ? -0.85 : 0.85;
+                // Remate centrado: reacción corta, sin elegir un lado al azar.
+                this.gkTargetX = zLanding * 0.35;
+                this.gkTargetY = Math.min(0.25, Math.max(-0.15, yLanding - 1.45));
+                this.gkTargetRotZ = 0;
                 this.gkLeapHeight = 0.25;
-                this.gkArmTargetL = { z: 1.2, x: -0.5 };
-                this.gkArmTargetR = { z: -1.2, x: -0.5 };
+                this.gkArmTargetL = { z: 0.35, x: -0.85 };
+                this.gkArmTargetR = { z: -0.35, x: -0.85 };
             }
         } else {
             // Tiro desviado, poste o travesaño
@@ -1475,6 +1397,20 @@ setupLighting() {
         }
 
         this.drawTrajectoryLine(points);
+    }
+
+    finishShot() {
+        if (this.shotCompleted) return;
+        this.shotCompleted = true;
+        this.isKicking = false;
+
+        if (this.activeShotResult && this.activeShotResult.outcome.includes('GOAL')) {
+            this.triggerGoalCelebration();
+        }
+
+        if (this.onShotComplete) {
+            this.onShotComplete(this.activeShotResult);
+        }
     }
 
     drawTrajectoryLine(points) {
@@ -1557,6 +1493,7 @@ setupLighting() {
         // 5. Animación del tiro: Carrera del pateador, vuelo del balón y estirada del arquero
         if (this.isKicking && this.flightPoints.length > 1) {
             const elapsed = (now - this.kickStartTime) / 1000;
+            this.restoreGoalkeeperLimbs();
 
             // Animación de patada del futbolista: golpeo con el EMPEINE hacia adelante (-Z)
             if (this.kickerLegR && elapsed <= 0.48) {
@@ -1678,10 +1615,12 @@ setupLighting() {
                 }
 
                 // Estirada lateral acrobática de Fernando Muslera hacia el palo con salto parabólico
-                if (this.goalkeeper && progress > 0.20 && this.gkState === 'dive') {
-                    const diveProg = Math.min(1.0, Math.max(0.0, (progress - 0.20) / 0.72));
+                if (this.goalkeeper && this.gkState === 'dive') {
+                    const timeToGoal = Math.max(0.1, this.activeShotResult?.tGoal || this.kickDuration);
+                    const shotTime = Number.isFinite(currentPt.t) ? currentPt.t : ballElapsed;
+                    const diveProg = THREE.MathUtils.clamp(shotTime / timeToGoal, 0, 1);
                     const smoothDive = diveProg * diveProg * (3 - 2 * diveProg);
-                    const leapArc = Math.sin(diveProg * Math.PI) * (this.gkLeapHeight || 0.45);
+                    const leapArc = Math.sin(diveProg * Math.PI / 2) * (this.gkLeapHeight || 0.45);
 
                     this.goalkeeper.position.x = this.gkStartX + (this.gkTargetX - this.gkStartX) * smoothDive;
                     this.goalkeeper.position.y = this.gkStartY + (this.gkTargetY - this.gkStartY) * smoothDive + leapArc;
@@ -1714,6 +1653,13 @@ setupLighting() {
                     }
                 }
 
+                const goalkeeperHit = this.checkGoalkeeperCollision(this.ball.position, 0.11);
+                if (goalkeeperHit) {
+                    this.registerGoalkeeperImpact(goalkeeperHit, currentPt, elapsed);
+                } else {
+                    this.previousBallPosition.copy(this.ball.position);
+                }
+
                 // Cámara de seguimiento dinámico
                 if (this.cameraMode === 'follow') {
                     this.camera.position.set(
@@ -1725,22 +1671,29 @@ setupLighting() {
                 }
 
                 // Fin del tiro
-                if (progress >= 1.0) {
-                    this.isKicking = false;
-
-                    if (this.activeShotResult && this.activeShotResult.outcome.includes('GOAL')) {
-                        this.triggerGoalCelebration();
-                    }
-
-                    if (this.onShotComplete) {
-                        this.onShotComplete(this.activeShotResult);
-                    }
+                if (progress >= 1.0 && this.isKicking) {
+                    this.finishShot();
 
                     // Programar retorno suave del arquero a su posición inicial tras la jugada
                     setTimeout(() => {
                         this.resetGoalkeeper();
                     }, 1600);
                 }
+            }
+        }
+
+        if (this.goalkeeperRebound) {
+            const rebound = this.goalkeeperRebound;
+            const t = Math.min((now - rebound.startTime) / 1000, rebound.duration);
+            this.ball.position.copy(rebound.start).addScaledVector(rebound.velocity, t);
+            this.ball.position.y = Math.max(0.11, rebound.start.y + rebound.velocity.y * t - 4.9 * t * t);
+            if (this.ballShadow) {
+                this.ballShadow.position.set(this.ball.position.x, 0.006, this.ball.position.z);
+            }
+            if (t >= rebound.duration) {
+                this.goalkeeperRebound = null;
+                this.finishShot();
+                setTimeout(() => this.resetGoalkeeper(), 1600);
             }
         }
 

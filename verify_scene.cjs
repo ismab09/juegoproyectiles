@@ -8,6 +8,7 @@ const scene = Object.create(FootballScene.prototype);
 scene.goalZ = -35;
 scene.distGoal = 22;
 scene.shotZ = -13;
+scene.previousBallPosition = new THREE.Vector3();
 scene.cameraMode = 'player';
 scene.camera = new THREE.PerspectiveCamera(54, 1.4, .05, 500);
 scene.cameraTarget = new THREE.Vector3();

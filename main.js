@@ -81,7 +81,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // Notificación de Gol / Resultado
         resultBanner: document.getElementById('resultBanner'),
         resultTitle: document.getElementById('resultTitle'),
-        resultDetail: document.getElementById('resultDetail')
+        resultDetail: document.getElementById('resultDetail'),
+        closeResultBtn: document.getElementById('closeResultBtn'),
+        showGraphsBtn: document.getElementById('showGraphsBtn'),
+        graphsModal: document.getElementById('graphsModal'),
+        graphsGrid: document.getElementById('graphsGrid'),
+        closeGraphsBtn: document.getElementById('closeGraphsBtn')
     };
 
     function setWallEnabled(enabled) {
@@ -251,6 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     scene.onShotComplete = (result) => {
+        state.lastShotSamples = scene.shotSamples.slice();
         showResultBanner(result);
 
         if (result.outcome && result.outcome.includes('GOAL')) {
@@ -264,7 +270,93 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    function drawShotGraph(canvas, samples, key, unit) {
+        const ratio = window.devicePixelRatio || 1;
+        const width = Math.max(250, canvas.clientWidth);
+        const height = Math.max(120, canvas.clientHeight);
+        canvas.width = width * ratio;
+        canvas.height = height * ratio;
+        const ctx = canvas.getContext('2d');
+        ctx.scale(ratio, ratio);
+        const margin = { left: 52, right: 14, top: 14, bottom: 34 };
+        const plotW = width - margin.left - margin.right;
+        const plotH = height - margin.top - margin.bottom;
+        const times = samples.map(sample => sample.t);
+        const values = samples.map(sample => Number.isFinite(sample[key]) ? sample[key] : 0);
+        let minT = Math.min(...times), maxT = Math.max(...times);
+        let minV = Math.min(...values), maxV = Math.max(...values);
+        if (maxT === minT) maxT = minT + 1;
+        if (maxV === minV) { minV -= 1; maxV += 1; }
+        const padding = (maxV - minV) * 0.08;
+        minV -= padding; maxV += padding;
+        const px = t => margin.left + (t - minT) / (maxT - minT) * plotW;
+        const py = v => margin.top + (maxV - v) / (maxV - minV) * plotH;
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, width, height);
+        ctx.strokeStyle = '#d8dee8'; ctx.lineWidth = 1;
+        ctx.font = '11px Arial'; ctx.fillStyle = '#475569';
+        for (let i = 0; i <= 5; i++) {
+            const x = margin.left + plotW * i / 5;
+            const y = margin.top + plotH * i / 5;
+            ctx.beginPath(); ctx.moveTo(x, margin.top); ctx.lineTo(x, margin.top + plotH); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(margin.left, y); ctx.lineTo(margin.left + plotW, y); ctx.stroke();
+            ctx.textAlign = 'center'; ctx.fillText((minT + (maxT - minT) * i / 5).toFixed(2), x, height - 15);
+            ctx.textAlign = 'right'; ctx.fillText((maxV - (maxV - minV) * i / 5).toFixed(1), margin.left - 7, y + 4);
+        }
+        ctx.strokeStyle = '#334155'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(margin.left, margin.top); ctx.lineTo(margin.left, margin.top + plotH); ctx.lineTo(margin.left + plotW, margin.top + plotH); ctx.stroke();
+        ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 2.2; ctx.beginPath();
+        samples.forEach((sample, index) => {
+            const x = px(sample.t), y = py(Number.isFinite(sample[key]) ? sample[key] : 0);
+            if (index === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+        ctx.fillStyle = '#172033'; ctx.textAlign = 'center'; ctx.fillText('tiempo (s)', margin.left + plotW / 2, height - 2);
+        ctx.save(); ctx.translate(12, margin.top + plotH / 2); ctx.rotate(-Math.PI / 2); ctx.fillText(unit, 0, 0); ctx.restore();
+    }
+
+    function openShotGraphs() {
+        const samples = state.lastShotSamples || [];
+        if (samples.length < 2) return;
+        const graphs = [
+            ['x', 'x(t)', 'posición x (m)'], ['y', 'y(t)', 'altura y (m)'],
+            ['vx', 'vx(t)', 'vx (m/s)'], ['vy', 'vy(t)', 'vy (m/s)'],
+            ['ax', 'ax(t)', 'ax (m/s²)'], ['ay', 'ay(t)', 'ay (m/s²)']
+        ];
+        ui.graphsGrid.innerHTML = '';
+        ui.graphsModal.classList.add('open');
+        ui.graphsModal.setAttribute('aria-hidden', 'false');
+        graphs.forEach(([key, title, unit]) => {
+            const card = document.createElement('section');
+            card.className = 'shot-graph';
+            const heading = document.createElement('h3'); heading.textContent = title;
+            const canvas = document.createElement('canvas');
+            card.append(heading, canvas); ui.graphsGrid.appendChild(card);
+            drawShotGraph(canvas, samples, key, unit);
+        });
+    }
+
+    function closeShotGraphs() {
+        ui.graphsModal.classList.remove('open');
+        ui.graphsModal.setAttribute('aria-hidden', 'true');
+    }
+
+    ui.showGraphsBtn.addEventListener('click', openShotGraphs);
+    ui.closeGraphsBtn.addEventListener('click', closeShotGraphs);
+    ui.graphsModal.addEventListener('click', event => { if (event.target === ui.graphsModal) closeShotGraphs(); });
+    document.addEventListener('keydown', event => { if (event.key === 'Escape') closeShotGraphs(); });
+
+    let resultBannerTimer = null;
+
+    function hideResultBanner() {
+        if (resultBannerTimer !== null) {
+            if (typeof clearTimeout === 'function') clearTimeout(resultBannerTimer);
+            resultBannerTimer = null;
+        }
+        ui.resultBanner.classList.remove('show');
+    }
+
     function showResultBanner(res) {
+        hideResultBanner();
         ui.resultTitle.textContent = res.message;
 
         let detailText = `Llegada: t = ${res.tGoal ? res.tGoal.toFixed(2) + 's' : '--'} | Altura en línea de gol: ${res.yAtGoal ? res.yAtGoal.toFixed(2) + 'm' : '--'}`;
@@ -279,10 +371,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         ui.resultBanner.className = 'result-banner show ' + (res.outcome.includes('GOAL') ? 'success' : res.outcome === 'CROSSBAR' || res.outcome === 'POST' ? 'warning' : 'danger');
 
-        setTimeout(() => {
-            ui.resultBanner.classList.remove('show');
-        }, 5000);
+        resultBannerTimer = setTimeout(hideResultBanner, 2200);
     }
+
+    ui.closeResultBtn.addEventListener('click', hideResultBanner);
 
     // =========================================================================
     // Conectar Eventos de la Interfaz
@@ -414,7 +506,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     ui.resetBtn.addEventListener('click', () => {
         scene.resetBall();
-        ui.resultBanner.classList.remove('show');
+        hideResultBanner();
     });
 
     // Botones de Cámara

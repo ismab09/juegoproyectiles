@@ -54,6 +54,7 @@ class FootballScene {
         this.goalkeeper = { position: new THREE.Vector3(0, 0, -34.65) };
         this.camera = { position: new THREE.Vector3() };
         this.standsGroup = { position: new THREE.Vector3() };
+        this.shotSamples = [];
         gameScene = this;
     }
     setTargetPosition(x, y) { this.targetMarker.position.set(x, y, this.goalZ + .05); }
@@ -72,8 +73,13 @@ const Challenges = { generateChallenge: wallEnabled => ({
     title: String(wallEnabled), badge: String(wallEnabled), question: String(wallEnabled), unknownUnit: 'm',
     stepByStep: [], formulaId: 'yf', wallActive: wallEnabled
 }) };
+const audioCalls = { goal: 0, save: 0, crossbar: 0, wall: 0 };
+const AudioFX = {
+    playGoal() { audioCalls.goal++; }, playSave() { audioCalls.save++; },
+    playCrossbar() { audioCalls.crossbar++; }, playWallHit() { audioCalls.wall++; }
+};
 vm.runInNewContext(fs.readFileSync('main.js', 'utf8'), {
-    document, FootballScene, Physics, Challenges, THREE, AudioFX: {}, console, setTimeout
+    document, FootballScene, Physics, Challenges, THREE, AudioFX, console, setTimeout
 });
 function checkTarget(name, wallEnabled) {
     const expected = targetData.find(item => item[2] === name);
@@ -93,4 +99,11 @@ targets[5].click(); checkTarget('Centro', true);
 modes[0].click(); checkTarget('Centro', false);
 targets[4].click(); checkTarget('Travesaño', false);
 modes[1].click(); checkTarget('Travesaño', true);
+for (let i = 0; i < 5; i++) gameScene.onShotComplete({ outcome: 'GOAL', message: 'gol' });
+for (let i = 0; i < 3; i++) gameScene.onShotComplete({ outcome: 'SAVED', message: 'atajada' });
+gameScene.onShotComplete({ outcome: 'POST', message: 'poste' });
+gameScene.onShotComplete({ outcome: 'CROSSBAR', message: 'travesaño' });
+gameScene.onShotComplete({ outcome: 'WALL_HIT_GROUND', message: 'barrera' });
+gameScene.onShotComplete({ outcome: 'MISS', message: 'afuera' });
+assert.deepEqual(audioCalls, { goal: 5, save: 3, crossbar: 2, wall: 1 });
 console.log('Diana independiente de barrera: OK');
